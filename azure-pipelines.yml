@@ -1,0 +1,32 @@
+# 
+# Build Pipeline
+# https://docs.microsoft.com/azure/devops/pipelines/languages/docker
+
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  tag: '$(Build.BuildId)'
+  buildConfiguration: 'Release'
+  
+steps:
+- task: UseDotNet@2
+  inputs:
+    version: '8.0'
+    packageType: 'sdk'
+
+- script: |
+    dotnet restore
+    dotnet build --configuration $(buildConfiguration) --no-restore
+    dotnet test --no-restore --verbosity normal
+    dotnet publish --no-restore --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)
+  displayName: 'DotNet Core Build and Publish'
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'drop'
+    publishLocation: 'Container'
